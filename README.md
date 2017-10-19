@@ -1,9 +1,9 @@
 # Arduino-101-V1
 This sketch work with the app on both iOS and Android : "Arduino 101 Kit".
 
-iOS- 
+iOS - Comming Soon
 
-Android- 
+Android - Comming Soon
 
 Features:
 - Best in class Arduino 101 controller.
