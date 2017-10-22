@@ -1,7 +1,7 @@
 # Arduino-101-V1
 This sketch work with the app on both iOS and Android : "Arduino 101 Kit".
 
-iOS - Comming Soon
+iOS - https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
 
 Android - Comming Soon
 
