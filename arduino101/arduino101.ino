@@ -12,8 +12,8 @@
 
   Requirments:
   - Mobile App "Arduino 101 Kit" on both OS:
-      iOS: 
-      Android: 
+      iOS: https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
+      Android: Comming soon
   - 
 
   
