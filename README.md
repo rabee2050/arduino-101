@@ -1,9 +1,9 @@
 # Arduino-101-V1
 This sketch work with the app on both iOS and Android : "Arduino 101 Kit".
 
-iOS - https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
+- iOS: https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
 
-Android - Comming Soon
+- Android: Comming Soon
 
 Features:
 - Best in class Arduino 101 controller.
