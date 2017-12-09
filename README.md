@@ -3,7 +3,7 @@ This sketch work with the app on both iOS and Android : "Arduino 101 Kit".
 
 - iOS: https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
 
-- Android: Comming Soon
+- Android: https://play.google.com/store/apps/details?id=com.tatco.curie&hl=en
 
 Features:
 - Best in class Arduino 101 controller.
