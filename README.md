@@ -34,3 +34,6 @@ Requirements:
 
 - Arduino 101 board.
 - Arduino Sketch.
+
+Check this youtube to see in real world:	
+- https://youtu.be/vqinNfAr51E
