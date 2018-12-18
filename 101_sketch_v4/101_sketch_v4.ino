@@ -1,22 +1,25 @@
 /*
-  Done by TATCO Inc.
-  Contacts:
-  info@tatco.cc
+  Title  : Arduino 101 Kit
+  version: V4.
+  Contact: info@tatco.cc
+  Done By: TATCO Inc.
+  github : https://github.com/rabee2050/arduino-101
+  Youtube: http://tatco.cc
+
+  Apps:
+  iOS    : https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
+  Android: https://play.google.com/store/apps/details?id=com.tatco.curie&hl=en
 
   Release Notes:
   - V1 Created 10 Oct 2017
-  
-  
+  - V2 skipped
+  - V3 skipped
+  - V4 Updated 18 Dec 2018
+
+
   Connection:
   - No connections are required, Just uplode the sketch to you Arduino 101.
 
-  Requirments:
-  - Mobile App "Arduino 101 Kit" on both OS:
-      iOS: https://itunes.apple.com/us/app/arduino-101-kit/id1298510087?ls=1&mt=8
-      Android: Comming soon
-  - 
-
-  
 */
 
 
@@ -25,20 +28,23 @@
 
 
 BLEPeripheral blePeripheral;
-BLEService serviceCharacteristic("6E400001-B5A3-F393-E0A9-E50E24DCCA9E");
-BLECharacteristic txRxCharacteristic("6E400002-B5A3-F393-E0A9-E50E24DCCA9E", BLEWrite | BLENotify | BLERead , 20);
-
+BLEService serviceCharacteristic("6e400001-b5a3-f393-e0a9-e50e24dcca9e");
+BLECharacteristic txRxCharacteristic("6e400002-b5a3-f393-e0a9-e50e24dcca9e", BLEWrite | BLENotify | BLERead , 20);
 char Buffer[32] ;
 
-#define lcd_size 3 //this will define number of LCD on the phone app
-int refresh_time = 3; //the data will be updated on the app every 3 seconds.
+#define lcdSize 3 //this will define number of LCD on the phone app
+int refreshTime = 3; //the data will be updated on the app every 3 seconds.
 
-char mode_action[54];
-int mode_val[54];
-String mode_feedback ;
-String lcd[lcd_size];
+char pinsMode[54];
+int pinsValue[54];
+String feedBack ;
+String lcd[lcdSize];
+String boardType;
+String protectionPassword = "";
+String appBuildVersion = "4.0";
+
 unsigned long last = millis();
-Servo myServo[54];
+Servo servoArray[54];
 
 void setup()
 {
@@ -51,12 +57,9 @@ void setup()
   blePeripheral.addAttribute(serviceCharacteristic);
   blePeripheral.addAttribute(txRxCharacteristic);
   blePeripheral.begin();
-
   Serial.println("Arduino 101 is running and waiting for connection.....");
   Serial.println("");
-  
-  kitSetup();
-
+  boardInit();
 }
 
 void loop()
@@ -90,7 +93,7 @@ void loop()
       }
       updateInputs();//if it is input then update pin value.
       updateApp();//Send data to mobile app every specidic time
-      
+
       lcd[0] = "Test 1 LCD";// you can send any data to your mobile app.
       lcd[1] = "Test 2 LCD2";// you can send any data to your mobile app.
       lcd[2] = 85;// you can send any data to your mobile app.
@@ -116,7 +119,7 @@ void process(String command, String second, String third, String forth) {
   }
 
   if (command == "analog") {//to write analog value(PWM).
-    analogCommand(second, third);
+    pwmCommand(second, third);
   }
 
   if (command == "mode") {//to chang the mode of the pin.
@@ -124,7 +127,7 @@ void process(String command, String second, String third, String forth) {
   }
 
   if (command == "servo") {// to control servo(0°-180°).
-    servo(second, third);
+    servoCommand(second, third);
   }
 
   if (command == "allonoff") {//to turn all pins on or off.
@@ -135,14 +138,19 @@ void process(String command, String second, String third, String forth) {
   }
 
   if (command == "allstatus") {// send JSON object arduino includes all data.
+    feedBack = "refresh/";
     allstatus();
   }
 }
 
 void terminalCommand(String second) {//Here you recieve data form app terminal
   String data = second;
-  lcd[2] = data;//show data on LCD #2
   Serial.println(data);
+
+  String replyToApp = "Ok from Arduino"; //It can be change to any thing
+
+  feedBack = "terminal/" + replyToApp; //dont change this line.
+  allstatus();
 }
 
 void digitalCommand(String second, String third) {
@@ -151,105 +159,109 @@ void digitalCommand(String second, String third) {
   value = third.toInt();
 
   digitalWrite(pin, value);
-  mode_val[pin] = value;
+  pinsValue[pin] = value;
 
 }
 
-void analogCommand(String second, String third) {
+void pwmCommand(String second, String third) {
   int pin, value;
   pin = second.toInt();
   value = third.toInt();
 
   analogWrite(pin, value);
-  mode_val[pin] = value;
+  pinsValue[pin] = value;
 
 
 }
 
-void servo(String second, String third) {
+void servoCommand(String second, String third) {
   int pin, value;
   pin = second.toInt();
   value = third.toInt();
-  myServo[pin].write(value);
-  mode_val[pin] = value;
+  servoArray[pin].write(value);
+  pinsValue[pin] = value;
 
 }
 
 void modeCommand(String second, String third ) {
   int pin = second.toInt();
   String mode = third;
-  mode_feedback = "";
-  //  Serial.print(pin);
-  Serial.println(mode.length());
-  if (mode == "input") {
-    pinMode(pin, INPUT);
-    mode_action[pin] = 'i';
-    mode_feedback += "D";
-    mode_feedback += pin;
-    mode_feedback += " set as INPUT!";
-
-  }
 
   if (mode == "output") {
     pinMode(pin, OUTPUT);
-    mode_action[pin] = 'o';
-    mode_feedback += "D";
-    mode_feedback += pin;
-    mode_feedback += " set as OUTPUT!";
+    digitalWrite(pin, 0);
+    pinsMode[pin] = 'o';
+    pinsValue[pin] = 0;
+  }
+  if (mode == "push") {
+    pinsMode[pin] = 'm';
+    pinsValue[pin] = 0;
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, 0);
+  }
+  if (mode == "schedule") {
+    pinsMode[pin] = 'c';
+    pinsValue[pin] = 0;
+    pinMode(pin, OUTPUT);
+    digitalWrite(pin, 0);
+  }
+
+  if (mode == "input") {
+    pinsMode[pin] = 'i';
+    pinsValue[pin] = 0;
+    pinMode(pin, INPUT);
   }
 
   if (mode == "pwm") {
+    pinsMode[pin] = 'p';
+    pinsValue[pin] = 0;
     pinMode(pin, OUTPUT);
-    mode_action[pin] = 'p';
-    mode_feedback += "D";
-    mode_feedback += pin;
-    mode_feedback += " set as PWM!";
+    analogWrite(pin, 0);
   }
 
   if (mode == "servo") {
-    myServo[pin].attach(pin);
-    mode_action[pin] = 's';
-    mode_feedback += "D";
-    mode_feedback += pin;
-    mode_feedback += " set as SERVO!";
+    pinsMode[pin] = 's';
+    pinsValue[pin] = 0;
+    servoArray[pin].attach(pin);
+    servoArray[pin].write(0);
   }
+  feedBack = "mode/" + mode + "/" + pin + "/" + pinsValue[pin];
   allstatus();
-
 }
 
 void allonoff(String second, String third) {
   //  int pin, value;
   //  pin = second.toInt();
-  int value = second.toInt();
-  for (byte i = 0; i < sizeof(mode_action); i++) {
-    if (mode_action[i] == 'o') {
+  int value = third.toInt();
+  for (byte i = 0; i < sizeof(pinsMode); i++) {
+    if (pinsMode[i] == 'o') {
       digitalWrite(i, value);
-      mode_val[i] = value;
+      pinsValue[i] = value;
     }
   }
 }
 
 void refresh(String second) {
   int value = second.toInt();
-  refresh_time = value;
+  refreshTime = value;
   Serial.println(value);
-
+  allstatus();
 }
 
 
 
 void updateInputs() {
-  for ( unsigned int i = 0; i < sizeof(mode_action); i++) {
-    if (mode_action[i] == 'i') {
-      mode_val[i] = digitalRead(i);
+  for ( unsigned int i = 0; i < sizeof(pinsMode); i++) {
+    if (pinsMode[i] == 'i') {
+      pinsValue[i] = digitalRead(i);
     }
   }
 }
 
 void updateApp() {
 
-  if (refresh_time != 0) {
-    unsigned int refreshVal = refresh_time * 1000;
+  if (refreshTime != 0) {
+    unsigned int refreshVal = refreshTime * 1000;
     if (millis() - last > refreshVal) {
       allstatus();
       last = millis();
@@ -259,69 +271,79 @@ void updateApp() {
 
 void allstatus() {
 
-  String data_status;
-  data_status += "{";
-  data_status += "\"m\":[";//m for pin mode
+  String dataResponse;
+  dataResponse += "{";
+  dataResponse += "\"m\":[";//m for pin mode
   for (byte i = 0; i <= 13; i++) {
-    data_status += "\"";
-    data_status += mode_action[i];
-    data_status += "\"";
-    if (i != 13)data_status += ",";
+    dataResponse += "\"";
+    dataResponse += pinsMode[i];
+    dataResponse += "\"";
+    if (i != 13)dataResponse += ",";
   }
-  data_status += "],";
+  dataResponse += "],";
 
-  data_status += "\"v\":[";//v for mode value
+  dataResponse += "\"v\":[";//v for mode value
   for (byte i = 0; i <= 13; i++) {
-    data_status += mode_val[i];
-    if (i != 13)data_status += ",";
+    dataResponse += pinsValue[i];
+    if (i != 13)dataResponse += ",";
   }
-  data_status += "],";
+  dataResponse += "],";
 
-  data_status += "\"a\":[";//a for analog
+  dataResponse += "\"a\":[";//a for analog
   for (byte i = 0; i <= 5; i++) {
-    data_status += analogRead(i);
-    if (i != 5)data_status += ",";
+    dataResponse += analogRead(i);
+    if (i != 5)dataResponse += ",";
   }
-  data_status += "],";
+  dataResponse += "],";
 
-  data_status += "\"l\":[";// for lcd
-  for (byte i = 0; i <= lcd_size - 1; i++) {
-    data_status += "\"";
-    data_status += lcd[i];
-    data_status += "\"";
-    if (i != lcd_size - 1)data_status += ",";
+  dataResponse += "\"l\":[";// for lcd
+  for (byte i = 0; i <= lcdSize - 1; i++) {
+    dataResponse += "\"";
+    dataResponse += lcd[i];
+    dataResponse += "\"";
+    if (i != lcdSize - 1)dataResponse += ",";
   }
-  data_status += "],";
+  dataResponse += "],";
 
-  data_status += "\"f\":\"";// for feedback.
-  data_status += mode_feedback;
-  data_status += "\",";
-  data_status += "\"t\":\"";//t for time.
-  data_status +=  refresh_time;
-  data_status += "\"";
-  data_status += "}";
+  dataResponse += "\"t\":\""; //t for Board Type .
+  dataResponse += "101";
+  dataResponse += "\",";
+  dataResponse += "\"f\":\""; //t for Board Type .
+  dataResponse += feedBack;
+  dataResponse += "\",";
+  dataResponse += "\"r\":\""; //t for Board Type .
+  dataResponse += refreshTime;
+  dataResponse += "\",";
+  dataResponse += "\"b\":\""; //b for app build version .
+  dataResponse += appBuildVersion;
+  dataResponse += "\",";
+  dataResponse += "\"p\":\""; // p for Password.
+  dataResponse += protectionPassword;
+  dataResponse += "\"";
+  dataResponse += "}";
+  
   char dataBuffer[20];
-
-  int data_statusLength = data_status.length();
-  for (int i = 0; i <= data_statusLength; i = i + 20) {
+  int dataResponseLength = dataResponse.length();
+  
+  for (int i = 0; i <= dataResponseLength; i = i + 20) {
     for (int x = 0; x < 20; x++) {
-      dataBuffer[x] = data_status[i + x];
+      dataBuffer[x] = dataResponse[i + x];
     }
     txRxCharacteristic.setValue((unsigned char *)dataBuffer, 20) ;
   }
   txRxCharacteristic.setValue((unsigned char *)"\n", 2) ;
-  mode_feedback = "";
+  feedBack = "";
 }
 
-void kitSetup() {
+void boardInit() {
   for (byte i = 0; i <= 13; i++) {
     if (i == 0 || i == 1 ) {
-      mode_action[i] = 'x';
-      mode_val[i] = 0;
+      pinsMode[i] = 'x';
+      pinsValue[i] = 0;
     }
     else {
-      mode_action[i] = 'o';
-      mode_val[i] = 0;
+      pinsMode[i] = 'o';
+      pinsValue[i] = 0;
       pinMode(i, OUTPUT);
     }
   }
