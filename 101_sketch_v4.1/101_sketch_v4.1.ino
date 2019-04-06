@@ -19,7 +19,7 @@
 
 
   Connection:
-  - No connections are required, Just uplode the sketch to you Arduino 101.
+  - No connections are required, Just upload the sketch to you Arduino 101.
 
 */
 
